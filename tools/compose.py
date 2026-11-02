@@ -12,13 +12,15 @@ from tools.common import INPUT, POSITIONS, VICTIM_POS, props
 
 # ---------------------------------------------------------------- 조정용 상수
 W, H = 1080, 1350
-ROOM_BOXES = {  # (x0, y0, x1, y1) 비율
-    "L0": (0.03, 0.03, 0.40, 0.34), "R0": (0.60, 0.03, 0.97, 0.34),
-    "L1": (0.03, 0.35, 0.40, 0.65), "R1": (0.60, 0.35, 0.97, 0.65),
-    "L2": (0.03, 0.66, 0.40, 0.97), "R2": (0.60, 0.66, 0.97, 0.97),
+ROOM_BOXES = {  # (x0, y0, x1, y1) 비율 — 사건 001 GPT 그림(1254px) 실측 기준
+    "L0": (0.015, 0.010, 0.360, 0.302), "R0": (0.642, 0.010, 0.990, 0.302),
+    "L1": (0.015, 0.329, 0.360, 0.632), "R1": (0.642, 0.329, 0.990, 0.632),
+    "L2": (0.015, 0.659, 0.360, 0.978), "R2": (0.642, 0.659, 0.990, 0.978),
 }
-CORRIDOR_BOX = (0.41, 0.03, 0.59, 0.97)
-CORRIDOR_LABEL_Y = 0.30  # 복도 라벨 세로 위치(비율)
+CORRIDOR_BOX = (0.415, 0.010, 0.585, 0.978)
+# 방 안에서 라벨을 놓을 영역 (방 기준 비율). 접시(우상단)·슬리퍼(우하단)를 가리지 않도록 이불 위.
+LABEL_REGION = (0.03, 0.52, 0.62, 0.98)
+CORRIDOR_LABEL_Y = 0.06  # 복도 라벨 세로 위치(비율, 빈 카펫 위)
 
 C_BG = (250, 246, 238)
 C_BAR = (32, 36, 58)
@@ -28,7 +30,7 @@ C_TEXT = (40, 40, 48)
 C_SUB = (110, 110, 120)
 
 PUZZLE_IMG_BOX = (30, 165, 1050, 1045)
-ANSWER_IMG_BOX = (30, 160, 1050, 1010)
+ANSWER_IMG_BOX = (60, 158, 1020, 1100)
 
 # ---------------------------------------------------------------- 폰트
 FONT_CANDIDATES = [
@@ -200,7 +202,7 @@ def placeholder_image(case: dict, size=1024) -> Image.Image:
                    font=F(52), fill=(60, 40, 30), anchor="mm")
             p = props(s)
             # 접시 (침대와 문 글자 사이)
-            px0, py0, px1, py1 = x0 + 135, y0 + 110, x0 + 295, y0 + 230
+            px0, py0, px1, py1 = x0 + 125, y0 + 100, x0 + 275, y0 + 215
             d.ellipse([px0, py0, px1, py1], fill="white", outline=(150, 150, 150), width=3)
             items = ["b"] * p["bananas"] + ["p"] * p["peels"]
             for i, it in enumerate(items):
@@ -239,14 +241,14 @@ def load_art(case: dict):
 
 
 # ---------------------------------------------------------------- 카드
-def room_label_text(case: dict, s: dict) -> str:
+def room_label_lines(case: dict, s: dict) -> list:
     p = props(s)
-    parts = []
+    lines = [f"{s['id']}방"]
     if "banana_start" in case.get("world", {}):
-        parts += [f"바나나 {p['bananas']}", f"껍질 {p['peels']}"]
+        lines.append(f"바나나 {p['bananas']} · 껍질 {p['peels']}")
     if "slipper_pair" in case.get("world", {}):
-        parts.append(f"슬리퍼 {p['slippers']}")
-    return " · ".join(parts)
+        lines.append(f"슬리퍼 {p['slippers']}")
+    return lines
 
 
 def corridor_label_lines(case: dict) -> list:
@@ -288,8 +290,16 @@ def make_answer_card(case: dict, art: Image.Image, F: Fonts) -> Image.Image:
         is_c = s["id"] == case["culprit"]
         if is_c:
             dashed_rect(d, (x0 - 5, y0 - 5, x1 + 5, y1 + 5), C_RED)
-        label(d, F, (x0 + x1) / 2, y0 + 6, [f"{s['id']}  {room_label_text(case, s)}"],
-              max_w=(x1 - x0) - 12, size=24,
+        rw, rh = x1 - x0, y1 - y0
+        lx0, ly0, lx1, ly1 = (x0 + rw * LABEL_REGION[0], y0 + rh * LABEL_REGION[1],
+                              x0 + rw * LABEL_REGION[2], y0 + rh * LABEL_REGION[3])
+        lines = room_label_lines(case, s)
+        f_size = 30
+        while f_size > 14 and (f_size + 6) * len(lines) + 8 > (ly1 - ly0):
+            f_size -= 1
+        box_h = (f_size + 6) * len(lines) + 8
+        label(d, F, (lx0 + lx1) / 2, (ly0 + ly1 - box_h) / 2, lines,
+              max_w=lx1 - lx0, size=f_size,
               fg=(255, 255, 255) if is_c else C_TEXT,
               bg=C_RED if is_c else (255, 255, 255),
               border=C_RED if is_c else C_BAR)
@@ -301,7 +311,15 @@ def make_answer_card(case: dict, art: Image.Image, F: Fonts) -> Image.Image:
         label(d, F, (cx0 + cx1) / 2, cy, clines, max_w=(cx1 - cx0) - 6, size=24,
               fg=C_BAR, bg=C_ACCENT, border=C_BAR)
     # 해설
-    draw_text_block(d, case["explanation"], F(31), 48, 1030, W - 96, C_TEXT, gap=12, bullet=True)
+    top, bottom = area[1] + area[3] + 16, H - 72 - 12
+    size = 31
+    while size > 20:
+        f = F(size)
+        n = sum(len(wrap(t, f, W - 96 - int(size * 0.9))) for t in case["explanation"])
+        if n * (size + 10) <= bottom - top:
+            break
+        size -= 1
+    draw_text_block(d, case["explanation"], F(size), 48, top, W - 96, C_TEXT, gap=10, bullet=True)
     # 다음 사건 예고
     try:
         nxt = f"{int(case['id']) + 1:03d}"

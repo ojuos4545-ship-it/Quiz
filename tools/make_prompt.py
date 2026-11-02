@@ -12,11 +12,15 @@ LAYOUT = (
     "and a spot beside the bed for slippers. Each room's door opens to the corridor."
 )
 
+PEEL_RULE = ("Whole bananas are bright yellow and plump. Empty banana peels are brown with dark spots, flat and limp "
+             "with the skin split open into 3 strips, so a peel can never be mistaken for a whole banana.")
+
 RULES = [
     "The ONLY text allowed in the image is the single capital letter (A, B, C, D, E) on each room's door. No other words, numbers or signs.",
     "Objects on each plate must be large, clearly separated, and must NOT overlap, so they can be counted on a phone screen.",
     "Draw exactly the counts listed above. Do not add extra bananas, peels or slippers anywhere.",
     "Keep the camera angle, grid layout and room sizes exactly as described.",
+    PEEL_RULE,
 ]
 
 
@@ -72,5 +76,5 @@ def build_fix_prompt(case: dict, room_ids: list) -> str:
         f"Only change room(s) {', '.join(room_ids)} so that they match these exact counts:",
     ]
     lines += [room_line(case, s) for s in targets]
-    lines += ["", "Objects on the plate must be large and must not overlap. Do not add any text."]
+    lines += ["", "Objects on the plate must be large and must not overlap. Do not add any text.", PEEL_RULE]
     return "\n".join(lines) + "\n"
