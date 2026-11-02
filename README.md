@@ -19,12 +19,15 @@ pip install -r requirements.txt
 | `python run.py compose 001` | 퍼즐·정답 카드 (1080×1350) | `out/001/puzzle.png`, `answer.png` |
 | `python run.py review 001` | Claude 채팅용 최종검토 요청문 + 캡션 | `out/001/review_request.md`, `caption.txt` |
 | `python run.py all 001` | 위 전체 연속 실행 | |
+| `python run.py plate 001 --rooms A` | GPT가 계속 틀린 방의 접시를 설계값대로 직접 합성 | `input/001.png` (원본은 `001_orig.png`로 백업) |
+| `python run.py sprite 001 --room A --index 0 --name banana` | 그림 속 접시에서 바나나/껍질 조각 저장 (화풍 바뀔 때만) | `assets/sprites/*.png` |
 
 검증에 실패하면 이후 단계는 실행되지 않는다.
 
 ## 일일 워크플로
 1. Claude Code에 "새 사건 만들어줘 (normal)" → 사건 JSON 작성, 검증 통과까지 반복
 2. `gpt_prompt.txt`를 GPT에 붙여넣기 → 단서 개수 확인 → 틀리면 `--fix`로 부분 수정 → `input/NNN.png`로 저장
+   - 부분 수정을 2번 해도 틀리면 `python run.py plate NNN --rooms A`로 접시를 직접 합성
 3. `python run.py compose NNN`
 4. 카드 2장 + `review_request.md`를 Claude 채팅에 붙여넣기 → 업로드 가능/수정 후 가능/불가 판정
 5. 퍼즐 카드 업로드(`caption.txt`), 다음 날 정답 카드 업로드

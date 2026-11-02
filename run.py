@@ -5,6 +5,8 @@ python run.py prompt NNN [--fix A,D]
 python run.py compose NNN
 python run.py review NNN
 python run.py all NNN
+python run.py sprite NNN --room A --index 0 --name banana   (그림에서 조각 저장, 한 번만)
+python run.py plate NNN --rooms A                          (지정한 방 접시를 설계값대로 다시 그림)
 """
 import argparse
 import sys
@@ -64,11 +66,53 @@ def cmd_review(cid: str):
     print(f"[완료] out/{cid}/review_request.md, out/{cid}/caption.txt")
 
 
+def _art_path(cid: str):
+    from tools.common import INPUT
+    for ext in ("png", "jpg", "jpeg", "webp"):
+        p = INPUT / f"{cid}.{ext}"
+        if p.exists():
+            return p
+    sys.exit(f"[오류] input/{cid}.png 이 없습니다.")
+
+
+def cmd_sprite(cid: str, room: str, index: int, name: str):
+    from PIL import Image
+    from tools.common import suspect_by_id
+    from tools.plate import extract_sprite
+    case = load_case(cid)
+    s = suspect_by_id(case, room)
+    if not s:
+        sys.exit(f"[오류] 없는 방: {room}")
+    path = extract_sprite(Image.open(_art_path(cid)), s["pos"], index, name)
+    print(f"[완료] {path}")
+
+
+def cmd_plate(cid: str, rooms: str):
+    from PIL import Image
+    from tools.plate import rebuild_plate
+    case, _ = require_ok(cid)
+    src = _art_path(cid)
+    orig = src.with_name(f"{cid}_orig{src.suffix}")
+    if not orig.exists():  # GPT 원본은 한 번만 백업하고, 항상 원본에서 다시 합성
+        orig.write_bytes(src.read_bytes())
+    img = Image.open(orig)
+    ids = [x.strip().upper() for x in rooms.split(",") if x.strip()]
+    for sid in ids:
+        img = rebuild_plate(img, case, sid)
+    out = src.with_suffix(".png")
+    img.save(out)
+    print(f"[완료] {', '.join(ids)}방 접시를 설계값대로 다시 그림 → {out.name} (원본: {orig.name})")
+
+
 def main():
     ap = argparse.ArgumentParser(description="추리 퍼즐 콘텐츠 자동화")
-    ap.add_argument("command", choices=["verify", "prompt", "compose", "review", "all"])
+    ap.add_argument("command", choices=["verify", "prompt", "compose", "review", "all", "sprite", "plate"])
     ap.add_argument("case_id", help="사건 번호 (예: 001)")
     ap.add_argument("--fix", help="부분 수정할 방 (예: A,D)")
+    ap.add_argument("--rooms", help="plate: 접시를 다시 그릴 방 (예: A,D)")
+    ap.add_argument("--room", help="sprite: 조각을 잘라올 방")
+    ap.add_argument("--index", type=int, default=0, help="sprite: 접시 안 조각 번호 (위에서부터 0)")
+    ap.add_argument("--name", choices=["banana", "peel"], help="sprite: 저장 이름")
     a = ap.parse_args()
     cid = a.case_id.zfill(3)
 
@@ -81,6 +125,14 @@ def main():
         cmd_compose(cid)
     elif a.command == "review":
         cmd_review(cid)
+    elif a.command == "sprite":
+        if not (a.room and a.name):
+            sys.exit("[오류] --room 과 --name 이 필요합니다.")
+        cmd_sprite(cid, a.room.upper(), a.index, a.name)
+    elif a.command == "plate":
+        if not a.rooms:
+            sys.exit("[오류] --rooms 가 필요합니다 (예: --rooms A).")
+        cmd_plate(cid, a.rooms)
     elif a.command == "all":
         _, r = cmd_verify(cid)
         if not r.ok:

@@ -8,7 +8,10 @@ Claude Code의 역할: **사건 설계와 논리 검증**, 프롬프트·카드�
 1. `cases/` 안의 마지막 번호 다음 번호로 `cases/case_NNN.json`을 만든다 (형식은 `case_001.json` 참고).
 2. `python run.py verify NNN` 실행 → **오류 0개, 경고 0개**가 될 때까지 JSON을 고친다.
 3. `python run.py prompt NNN` 실행 → `out/NNN/gpt_prompt.txt` 내용을 사용자에게 보여준다.
-4. 사용자가 그림을 `input/NNN.png`로 저장하면 `python run.py compose NNN` → `python run.py review NNN`.
+4. 사용자가 그림을 주면 방별 개수를 설계값과 대조한다 (접시는 확대해서 확인).
+   틀린 방이 있으면 `python run.py prompt NNN --fix A`로 부분 수정 요청문을 준다.
+   부분 수정을 2번 해도 틀리면 `python run.py plate NNN --rooms A`로 접시를 직접 합성한다.
+5. 그림이 `input/NNN.png`로 저장되면 `python run.py compose NNN` → `python run.py review NNN`.
 
 ## 사건 설계 규칙 (반드시 지킴)
 1. 정답은 정확히 1명. 핵심 단서(key) 교집합 = 범인 1명.
