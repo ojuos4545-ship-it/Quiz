@@ -6,6 +6,7 @@ python run.py compose NNN
 python run.py review NNN
 python run.py all NNN
 python run.py sprite NNN --room A --index 0 --name banana   (그림에서 조각 저장, 한 번만)
+python run.py scene NNN                                  (방식 B 프로토타입: 소품을 코드로 배치한 그림 → input/NNN.png)
 python run.py plate NNN --rooms A                          (지정한 방 접시를 설계값대로 다시 그림)
 """
 import argparse
@@ -104,9 +105,23 @@ def cmd_plate(cid: str, rooms: str):
     print(f"[완료] {', '.join(ids)}방 접시를 설계값대로 다시 그림 → {out.name} (원본: {orig.name})")
 
 
+def cmd_scene(cid: str):
+    from tools.common import INPUT
+    from tools.scene import build_scene, count_check
+    case, _ = require_ok(cid)
+    img = build_scene(case)
+    bad = count_check(img, case)
+    path = INPUT / f"{cid}.png"
+    img.save(path)
+    print(f"[완료] {path.relative_to(INPUT.parent)} (프로토타입 장면, 소품 개수는 설계값대로 코드가 배치)")
+    if bad:
+        sys.exit("[경고] 접시 개수 자동 검수 불일치: " + ", ".join(f"{i}방 설계 {a} / 이미지 {b}" for i, a, b in bad))
+    print("[검수] 모든 방 접시 개수가 설계값과 일치합니다.")
+
+
 def main():
     ap = argparse.ArgumentParser(description="추리 퍼즐 콘텐츠 자동화")
-    ap.add_argument("command", choices=["verify", "prompt", "compose", "review", "all", "sprite", "plate"])
+    ap.add_argument("command", choices=["verify", "prompt", "compose", "review", "all", "sprite", "plate", "scene"])
     ap.add_argument("case_id", help="사건 번호 (예: 001)")
     ap.add_argument("--fix", help="부분 수정할 방 (예: A,D)")
     ap.add_argument("--rooms", help="plate: 접시를 다시 그릴 방 (예: A,D)")
@@ -129,6 +144,8 @@ def main():
         if not (a.room and a.name):
             sys.exit("[오류] --room 과 --name 이 필요합니다.")
         cmd_sprite(cid, a.room.upper(), a.index, a.name)
+    elif a.command == "scene":
+        cmd_scene(cid)
     elif a.command == "plate":
         if not a.rooms:
             sys.exit("[오류] --rooms 가 필요합니다 (예: --rooms A).")
