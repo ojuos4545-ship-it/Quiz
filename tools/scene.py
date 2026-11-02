@@ -208,8 +208,14 @@ def _scale_sprite(spr, c):
 
 
 # ------------------------------------------------------------------ 전체 장면
-def build_scene(case: dict) -> Image.Image:
+def build_skeleton(case: dict) -> Image.Image:
+    """소품(접시 속 물건·슬리퍼·복도 소품)을 뺀 배경+인물 그림. AI 그림의 구도 참고용이기도 하다."""
     c = Canvas()
+    _draw_base(c, case)
+    return c.finish()
+
+
+def _draw_base(c: Canvas, case: dict):
     cx0, cy0, cx1, cy1 = (v * c.s for v in CORRIDOR_BOX)
     c.rect((cx0, cy0, cx1, cy1), CARPET, w=5)
     c.d.rectangle([cx0 + 10 * SS, cy0, cx0 + 22 * SS, cy1], fill=CARPET_DARK)
@@ -230,6 +236,16 @@ def build_scene(case: dict) -> Image.Image:
             c.rect((x0 + rw * 0.12, y0 + rh * 0.60, x0 + rw * 0.52, y0 + rh * 0.82), (125, 70, 40), r=10 * SS)
             draw_nightstand(c, x0, y0, rw, rh)
     draw_victim(c, (cx0 + cx1) / 2, c.s * 0.50)
+
+
+def build_scene(case: dict, base: Image.Image | None = None) -> Image.Image:
+    """base가 있으면(AI가 그린 배경+인물) 그 위에, 없으면 코드로 그린 배경 위에 소품을 개수대로 올린다."""
+    c = Canvas()
+    if base is not None:
+        c.img = base.convert("RGB").resize((c.s, c.s), Image.LANCZOS)
+        c.d = ImageDraw.Draw(c.img)
+    else:
+        _draw_base(c, case)
     place_props(c, case)
     return c.finish()
 

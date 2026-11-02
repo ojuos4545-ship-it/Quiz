@@ -105,11 +105,17 @@ def cmd_plate(cid: str, rooms: str):
     print(f"[완료] {', '.join(ids)}방 접시를 설계값대로 다시 그림 → {out.name} (원본: {orig.name})")
 
 
-def cmd_scene(cid: str):
+def cmd_scene(cid: str, ai: bool = False):
     from tools.common import INPUT
-    from tools.scene import build_scene, count_check
+    from tools.scene import build_scene, build_skeleton, count_check
     case, _ = require_ok(cid)
-    img = build_scene(case)
+    base = None
+    if ai:
+        from tools.gen_art import generate_art
+        base = generate_art(case, build_skeleton(case))
+        base.save(INPUT / f"{cid}_base.png")  # AI가 그린 배경+인물 (소품 없음). 마음에 들면 재사용
+        print(f"[AI] 배경+인물 생성 완료 → input/{cid}_base.png")
+    img = build_scene(case, base)
     bad = count_check(img, case)
     path = INPUT / f"{cid}.png"
     img.save(path)
@@ -124,6 +130,7 @@ def main():
     ap.add_argument("command", choices=["verify", "prompt", "compose", "review", "all", "sprite", "plate", "scene"])
     ap.add_argument("case_id", help="사건 번호 (예: 001)")
     ap.add_argument("--fix", help="부분 수정할 방 (예: A,D)")
+    ap.add_argument("--ai", action="store_true", help="scene: 배경·인물을 Gemini(AI Studio)로 그림 (GEMINI_API_KEY 필요)")
     ap.add_argument("--rooms", help="plate: 접시를 다시 그릴 방 (예: A,D)")
     ap.add_argument("--room", help="sprite: 조각을 잘라올 방")
     ap.add_argument("--index", type=int, default=0, help="sprite: 접시 안 조각 번호 (위에서부터 0)")
@@ -145,7 +152,7 @@ def main():
             sys.exit("[오류] --room 과 --name 이 필요합니다.")
         cmd_sprite(cid, a.room.upper(), a.index, a.name)
     elif a.command == "scene":
-        cmd_scene(cid)
+        cmd_scene(cid, a.ai)
     elif a.command == "plate":
         if not a.rooms:
             sys.exit("[오류] --rooms 가 필요합니다 (예: --rooms A).")
