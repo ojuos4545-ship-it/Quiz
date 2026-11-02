@@ -1,0 +1,26 @@
+{
+  "id": "001",
+  "title": "범인은 누구?",
+  "difficulty": "easy",
+  "premise": "새 세입자가 첫날 밤 복도에서 미끄러져 숨졌다. 나머지 다섯 명은 모두 자고 있었다고 말한다. 각 방에는 바나나 3개와 슬리퍼 1켤레가 지급됐다.",
+  "culprit": "E",
+  "world": {"banana_start": 3, "slipper_pair": 2},
+  "corridor": {"peels": 1, "slippers": 1},
+  "suspects": [
+    {"id": "A", "pos": "L0", "desc": "curly-haired young man in a striped pajama", "props": {"bananas": 2, "peels": 1, "slippers": 2}},
+    {"id": "B", "pos": "R0", "desc": "elderly woman with glasses and a hair net", "props": {"bananas": 3, "peels": 0, "slippers": 2}},
+    {"id": "C", "pos": "L1", "desc": "bald middle-aged man with a mustache", "props": {"bananas": 1, "peels": 2, "slippers": 2}},
+    {"id": "D", "pos": "R1", "desc": "teenage girl wearing headphones", "props": {"bananas": 0, "peels": 3, "slippers": 2}},
+    {"id": "E", "pos": "L2", "desc": "tall man with a ponytail and a sleeping mask", "props": {"bananas": 1, "peels": 1, "slippers": 1}}
+  ],
+  "clues": [
+    {"id": "peel", "type": "peel_balance", "role": "key", "text": "바나나 3개 중 접시에 남은 바나나와 껍질 수를 더하면 3이 되어야 한다. E의 방만 껍질 1개가 모자란다."},
+    {"id": "slipper", "type": "slipper_missing", "role": "key", "text": "복도에 슬리퍼 한 짝이 떨어져 있다. 슬리퍼가 한 짝뿐인 방은 E의 방이다."}
+  ],
+  "explanation": [
+    "E의 방: 바나나 1개 + 껍질 1개 = 2개. 껍질 1개가 사라졌다.",
+    "복도의 껍질 1개와 슬리퍼 한 짝은 모두 E의 방에서 나왔다.",
+    "E는 껍질을 복도에 두고 돌아오다 슬리퍼를 잃어버렸다."
+  ],
+  "caption_hashtags": "#추리퀴즈 #범인은누구 #방탈출 #두뇌게임 #추리 #퍼즐 #퀴즈 #미스터리"
+}
